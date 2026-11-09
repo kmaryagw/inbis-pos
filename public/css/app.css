@@ -1,0 +1,63 @@
+:root {
+    --inbis-navy: #14365c;
+    --inbis-navy-dark: #0e2742;
+    --bs-primary: #14365c;
+    --bs-primary-rgb: 20, 54, 92;
+    --bs-link-color: #1d5a99;
+    --bs-link-color-rgb: 29, 90, 153;
+    --bs-body-bg: #f4f6f9;
+}
+
+.btn-primary {
+    --bs-btn-bg: var(--inbis-navy);
+    --bs-btn-border-color: var(--inbis-navy);
+    --bs-btn-hover-bg: var(--inbis-navy-dark);
+    --bs-btn-hover-border-color: var(--inbis-navy-dark);
+    --bs-btn-active-bg: var(--inbis-navy-dark);
+    --bs-btn-active-border-color: var(--inbis-navy-dark);
+    --bs-btn-disabled-bg: var(--inbis-navy);
+    --bs-btn-disabled-border-color: var(--inbis-navy);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--inbis-navy);
+    --bs-btn-border-color: var(--inbis-navy);
+    --bs-btn-hover-bg: var(--inbis-navy);
+    --bs-btn-hover-border-color: var(--inbis-navy);
+    --bs-btn-active-bg: var(--inbis-navy);
+}
+
+.navbar-inbis { background: var(--inbis-navy); }
+
+.page-title { font-size: 1.35rem; font-weight: 600; margin: 0; }
+
+.card { border: 1px solid #e3e7ee; box-shadow: 0 1px 2px rgba(16, 24, 40, .04); }
+
+.table > :not(caption) > * > * { vertical-align: middle; }
+.table thead th { font-size: .8rem; text-transform: uppercase; letter-spacing: .03em; color: #5b6675; font-weight: 600; }
+
+.stat-label { font-size: .8rem; color: #5b6675; }
+.stat-value { font-size: clamp(1.05rem, 4.6vw, 1.35rem); font-weight: 700; white-space: nowrap; }
+
+.num { font-variant-numeric: tabular-nums; }
+
+[x-cloak] { display: none !important; }
+
+.bar-track { height: 8px; background: #e9edf3; border-radius: 4px; overflow: hidden; }
+.bar-fill { height: 100%; background: var(--inbis-navy); border-radius: 4px; }
+
+.print-only { display: none; }
+
+/* RP-08: tampilan ramah cetak (A4) */
+@media print {
+    @page { size: A4; margin: 12mm; }
+    body { background: #fff; font-size: 11px; }
+    .navbar, .no-print, .pagination, .alert-dismissible .btn-close { display: none !important; }
+    .print-only { display: block !important; }
+    main.container-xl { max-width: none; padding: 0 !important; }
+    .card { border: 0; box-shadow: none; }
+    .table { font-size: 10.5px; }
+    .table-responsive { overflow: visible !important; }
+    a { color: inherit; text-decoration: none; }
+    .stat-value { font-size: 1rem; }
+}
