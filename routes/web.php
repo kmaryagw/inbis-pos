@@ -51,7 +51,7 @@ Route::middleware(['auth', 'role'])->group(function () {
     Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
         Route::resource('users', UserController::class)->except(['show', 'destroy']);
         Route::resource('categories', CategoryController::class)->only(['index', 'store', 'update']);
-        Route::resource('products', ProductController::class)->except(['show', 'destroy']);
+        Route::resource('products', ProductController::class)->except(['destroy']);
 
         Route::resource('events', EventController::class);
         Route::post('events/{event}/activate', [EventController::class, 'activate'])->name('events.activate');

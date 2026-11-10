@@ -99,4 +99,37 @@ class EventManagementTest extends TestCase
             $this->get(route($route))->assertOk();
         }
     }
+
+    public function test_product_code_is_generated_and_cannot_be_changed(): void
+    {
+        $this->actingAs($this->admin)->post(route('admin.products.store'), [
+            'code' => 'HACK', 'name' => 'Kopi', 'unit' => 'pcs', 'is_active' => 1,
+        ])->assertRedirect();
+        $second = $this->post(route('admin.products.store'), ['name' => 'Teh', 'unit' => 'pcs']);
+
+        [$a, $b] = Product::orderBy('id')->get()->all();
+        $this->assertSame(Product::codeFor($a->id), $a->code);
+        $this->assertMatchesRegularExpression('/^PRD-\d{5}$/', $b->code);
+        $this->assertNotSame($a->code, $b->code);
+        $second->assertRedirect(route('admin.products.show', $b));
+
+        $this->put(route('admin.products.update', $a), ['code' => 'XYZ', 'name' => 'Kopi Bali', 'unit' => 'pcs'])->assertRedirect();
+        $this->assertSame(Product::codeFor($a->id), $a->fresh()->code);
+        $this->assertSame('Kopi Bali', $a->fresh()->name);
+    }
+
+    public function test_product_detail_page_shows_allocations(): void
+    {
+        $event = $this->createEvent();
+        $product = Product::create(['name' => 'Kopi Kintamani', 'unit' => 'pcs', 'is_active' => true]);
+        $event->eventProducts()->create(['product_id' => $product->id, 'selling_price' => 25000, 'min_stock' => 0, 'is_active' => true]);
+
+        $this->get(route('admin.products.show', $product))
+            ->assertOk()
+            ->assertSee('Kopi Kintamani')
+            ->assertSee($product->code)
+            ->assertSee('Expo');
+        $this->get(route('admin.products.edit', $product))->assertOk()->assertSee($product->code);
+        $this->get(route('admin.products.index'))->assertOk()->assertSee(route('admin.products.show', $product));
+    }
 }

@@ -44,7 +44,7 @@
                         @endif
                     </td>
                     <td class="text-nowrap">{{ $p->code }}</td>
-                    <td class="fw-medium">{{ $p->name }}</td>
+                    <td class="fw-medium"><a href="{{ route('admin.products.show', $p) }}" class="text-reset text-decoration-none">{{ $p->name }}</a></td>
                     <td>{{ $p->category?->name ?? '—' }}</td>
                     <td>{{ $p->unit }}</td>
                     <td>
@@ -54,7 +54,10 @@
                             <span class="badge text-bg-secondary">Tidak aktif</span>
                         @endif
                     </td>
-                    <td class="text-end"><a href="{{ route('admin.products.edit', $p) }}" class="btn btn-sm btn-outline-primary">Ubah</a></td>
+                    <td class="text-end text-nowrap">
+                        <a href="{{ route('admin.products.show', $p) }}" class="btn btn-sm btn-outline-secondary">Detail</a>
+                        <a href="{{ route('admin.products.edit', $p) }}" class="btn btn-sm btn-outline-primary">Ubah</a>
+                    </td>
                 </tr>
             @empty
                 <tr><td colspan="7" class="text-center text-muted py-4">Belum ada produk.</td></tr>

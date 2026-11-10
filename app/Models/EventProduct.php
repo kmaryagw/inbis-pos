@@ -36,6 +36,11 @@ class EventProduct extends Model
         return $this->hasMany(StockMovement::class);
     }
 
+    public function transactionDetails(): HasMany
+    {
+        return $this->hasMany(TransactionDetail::class);
+    }
+
     public function isLowStock(): bool
     {
         return $this->current_stock <= $this->min_stock;

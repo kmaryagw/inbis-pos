@@ -12,8 +12,9 @@
 
             <div class="row g-3 mb-3">
                 <div class="col-sm-4">
-                    <label class="form-label" for="code">Kode / SKU</label>
-                    <input class="form-control" id="code" name="code" value="{{ old('code', $product->code) }}" required maxlength="50">
+                    <label class="form-label" for="code">Kode produk</label>
+                    <input class="form-control bg-body-secondary" id="code" value="{{ $product->exists ? $product->code : 'Otomatis' }}" readonly tabindex="-1" aria-describedby="codeHelp">
+                    <div class="form-text" id="codeHelp">{{ $product->exists ? 'Kode tidak dapat diubah.' : 'Dibuat otomatis saat disimpan.' }}</div>
                 </div>
                 <div class="col-sm-8">
                     <label class="form-label" for="name">Nama produk</label>
@@ -60,7 +61,7 @@
             </div>
             <div class="d-flex gap-2">
                 <button class="btn btn-primary">Simpan</button>
-                <a href="{{ route('admin.products.index') }}" class="btn btn-light">Batal</a>
+                <a href="{{ $product->exists ? route('admin.products.show', $product) : route('admin.products.index') }}" class="btn btn-light">Batal</a>
             </div>
         </form>
     </div>

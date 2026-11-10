@@ -5,9 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -41,9 +41,33 @@ class ProductController extends Controller
         $data = $this->validated($request);
         $data['photo'] = $request->file('photo')?->store('products', 'public');
 
-        Product::create($data);
+        $product = Product::create($data);
 
-        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil ditambahkan.');
+        return redirect()->route('admin.products.show', $product)->with('success', "Produk berhasil ditambahkan dengan kode {$product->code}.");
+    }
+
+    public function show(Product $product)
+    {
+        $product->load('category');
+
+        // Alokasi per kegiatan beserta penjualan (hanya transaksi berhasil)
+        $allocations = $product->eventProducts()
+            ->with('event:id,name,code,status,start_date,end_date')
+            ->withSum(['transactionDetails as units_sold' => fn ($q) => $q->whereHas('transaction', fn ($t) => $t->where('status', Transaction::PAID))], 'quantity')
+            ->withSum(['transactionDetails as revenue' => fn ($q) => $q->whereHas('transaction', fn ($t) => $t->where('status', Transaction::PAID))], 'subtotal')
+            ->get()
+            ->sortByDesc(fn ($ep) => $ep->event->start_date)
+            ->values();
+
+        return view('admin.products.show', [
+            'product' => $product,
+            'allocations' => $allocations,
+            'totals' => (object) [
+                'units' => (int) $allocations->sum('units_sold'),
+                'revenue' => (int) $allocations->sum('revenue'),
+                'stock' => (int) $allocations->filter(fn ($ep) => $ep->event->isActive())->sum('current_stock'),
+            ],
+        ]);
     }
 
     public function edit(Product $product)
@@ -67,13 +91,12 @@ class ProductController extends Controller
 
         $product->update($data);
 
-        return redirect()->route('admin.products.index')->with('success', 'Produk berhasil diperbarui.');
+        return redirect()->route('admin.products.show', $product)->with('success', 'Produk berhasil diperbarui.');
     }
 
     private function validated(Request $request, ?Product $product = null): array
     {
         $data = $request->validate([
-            'code' => ['required', 'string', 'max:50', Rule::unique('products')->ignore($product)],
             'name' => ['required', 'string', 'max:150'],
             'category_id' => ['nullable', 'exists:categories,id'],
             'description' => ['nullable', 'string', 'max:2000'],
