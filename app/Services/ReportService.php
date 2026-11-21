@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Event;
 use App\Models\EventProduct;
+use App\Models\Tenant;
 use App\Models\Transaction;
 use App\Support\ReportFilters;
 use Illuminate\Database\Query\Builder;
@@ -92,6 +93,118 @@ class ReportService
             ->selectRaw('e.id, e.name, e.status, e.start_date, COUNT(*) as count, SUM(transactions.total) as total')
             ->orderByDesc('e.start_date')
             ->get();
+    }
+
+    /** Rekap penjualan per pemilik (tenant/dosen), berdasarkan pemilik saat barang terjual. */
+    public function tenantSales(ReportFilters $f): Collection
+    {
+        return $this->detailQuery($f)
+            ->leftJoin('tenants as tn', 'tn.id', '=', 'td.tenant_id')
+            ->groupBy('td.tenant_id', 'tn.code', 'tn.name', 'tn.type', 'tn.unit')
+            ->selectRaw('td.tenant_id, tn.code, tn.name, tn.type, tn.unit,
+                COUNT(DISTINCT ep.product_id) as products, COUNT(DISTINCT t.id) as transactions,
+                SUM(td.quantity) as quantity, SUM(td.subtotal) as total')
+            ->orderByDesc('total')
+            ->get()
+            ->map(fn ($r) => (object) [
+                'tenant_id' => $r->tenant_id ? (int) $r->tenant_id : null,
+                'code' => $r->code,
+                'name' => $r->name ?? 'Tanpa pemilik',
+                'type' => $r->type ? Tenant::TYPES[$r->type] ?? $r->type : null,
+                'unit' => $r->unit,
+                'products' => (int) $r->products,
+                'transactions' => (int) $r->transactions,
+                'quantity' => (int) $r->quantity,
+                'total' => (int) $r->total,
+            ]);
+    }
+
+    /** Pendapatan per hari (untuk kegiatan beberapa hari). */
+    public function dailySales(ReportFilters $f): Collection
+    {
+        return $f->apply(DB::table('transactions'))
+            ->where('status', Transaction::PAID)
+            ->groupByRaw('DATE(transacted_at)')
+            ->selectRaw('DATE(transacted_at) as day, COUNT(*) as count, SUM(total) as total')
+            ->orderBy('day')
+            ->get()
+            ->map(fn ($r) => (object) ['day' => \Carbon\Carbon::parse($r->day), 'count' => (int) $r->count, 'total' => (int) $r->total]);
+    }
+
+    /**
+     * Laporan detail satu kegiatan, dikelompokkan per pemilik lalu per produk.
+     * Penjualan mengikuti filter tanggal; kolom stok adalah kondisi saat ini.
+     * Stok dicantumkan pada baris pemilik produk saat ini (bila kepemilikan pernah berpindah,
+     * penjualan lama tetap tercatat pada pemilik lama).
+     */
+    public function eventTenantDetail(Event $event, ReportFilters $f, ?int $onlyTenantId = null): object
+    {
+        $sales = $this->detailQuery($f)
+            ->where('t.event_id', $event->id)
+            ->groupBy('td.tenant_id', 'td.event_product_id')
+            ->selectRaw('td.tenant_id, td.event_product_id, SUM(td.quantity) as quantity, SUM(td.subtotal) as total, COUNT(DISTINCT td.unit_price) as prices')
+            ->get();
+
+        $eventProducts = EventProduct::with('product.tenant')->where('event_id', $event->id)->get()->keyBy('id');
+        $stock = $this->stock->summaryForEvent($event->id);
+
+        $makeRow = function (?int $tenantId, EventProduct $ep, int $qty, int $total, bool $multiPrice) use ($stock) {
+            $owner = $ep->product->tenant_id;
+            $s = $stock[$ep->id] ?? ['opening' => 0, 'in' => 0, 'sold' => 0, 'out' => 0];
+
+            return (object) [
+                'tenant_id' => $tenantId,
+                'ep_id' => $ep->id,
+                'code' => $ep->product->code,
+                'name' => $ep->product->name,
+                'unit' => $ep->product->unit,
+                'price' => $ep->selling_price,
+                'multi_price' => $multiPrice,
+                'quantity' => $qty,
+                'total' => $total,
+                'has_stock' => $tenantId === $owner,
+                'received' => $s['opening'] + $s['in'],
+                'out' => $s['out'],
+                'available' => $ep->current_stock,
+            ];
+        };
+
+        $rows = collect();
+        foreach ($sales as $s) {
+            $ep = $eventProducts[$s->event_product_id];
+            $rows->push($makeRow($s->tenant_id ? (int) $s->tenant_id : null, $ep, (int) $s->quantity, (int) $s->total, $s->prices > 1));
+        }
+        // Produk tanpa penjualan (atau yang pemiliknya kini berbeda) tetap tampil untuk pemilik saat ini
+        foreach ($eventProducts as $ep) {
+            if (! $rows->contains(fn ($r) => $r->has_stock && $r->ep_id === $ep->id)) {
+                $rows->push($makeRow($ep->product->tenant_id, $ep, 0, 0, false));
+            }
+        }
+
+        if ($onlyTenantId !== null) {
+            $rows = $rows->where('tenant_id', $onlyTenantId);
+        }
+
+        $tenants = Tenant::whereIn('id', $rows->pluck('tenant_id')->filter()->unique())->get()->keyBy('id');
+
+        $groups = $rows->groupBy(fn ($r) => $r->tenant_id ?? 0)
+            ->map(fn ($items, $key) => (object) [
+                'tenant' => $key ? $tenants[$key] : null,
+                'rows' => $items->sortBy('name', SORT_NATURAL | SORT_FLAG_CASE)->values(),
+                'products' => $items->count(),
+                'quantity' => $items->sum('quantity'),
+                'total' => $items->sum('total'),
+                'available' => $items->where('has_stock', true)->sum('available'),
+            ])
+            // Urut: pendapatan terbesar dulu, "Tanpa pemilik" paling akhir
+            ->sortBy([fn ($a, $b) => ($a->tenant === null) <=> ($b->tenant === null), fn ($a, $b) => $b->total <=> $a->total])
+            ->values();
+
+        return (object) [
+            'groups' => $groups,
+            'quantity' => $groups->sum('quantity'),
+            'total' => $groups->sum('total'),
+        ];
     }
 
     /** RP-05: stok per produk untuk satu kegiatan (kondisi saat ini, tidak terpengaruh filter tanggal). */

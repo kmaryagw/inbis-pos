@@ -4,9 +4,12 @@ use App\Http\Controllers\AccountController;
 use App\Http\Controllers\Admin\CategoryController;
 use App\Http\Controllers\Admin\EventController;
 use App\Http\Controllers\Admin\EventProductController;
+use App\Http\Controllers\Admin\OwnershipController;
 use App\Http\Controllers\Admin\ProductController;
+use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\UserController;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\EventReportController;
 use App\Http\Controllers\PosController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\ReportController;
@@ -45,6 +48,10 @@ Route::middleware(['auth', 'role'])->group(function () {
         Route::get('/dashboard', [ReportController::class, 'dashboard'])->name('dashboard');
         Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/laporan/ekspor', [ReportController::class, 'export'])->name('reports.export');
+        Route::get('/laporan/kegiatan', [EventReportController::class, 'index'])->name('reports.events.index');
+        Route::get('/laporan/kegiatan/{event}', [EventReportController::class, 'show'])->name('reports.events.show');
+        Route::get('/laporan/kegiatan/{event}/ekspor', [EventReportController::class, 'export'])->name('reports.events.export');
+        Route::get('/laporan/kegiatan/{event}/tenant/{tenant}', [EventReportController::class, 'tenant'])->name('reports.events.tenant');
     });
 
     // Administrasi
@@ -52,6 +59,9 @@ Route::middleware(['auth', 'role'])->group(function () {
         Route::resource('users', UserController::class)->except(['show', 'destroy']);
         Route::resource('categories', CategoryController::class)->only(['index', 'store', 'update']);
         Route::resource('products', ProductController::class)->except(['destroy']);
+        Route::resource('tenants', TenantController::class)->except(['destroy']);
+        Route::get('kepemilikan', [OwnershipController::class, 'index'])->name('ownership.index');
+        Route::put('kepemilikan', [OwnershipController::class, 'update'])->name('ownership.update');
 
         Route::resource('events', EventController::class);
         Route::post('events/{event}/activate', [EventController::class, 'activate'])->name('events.activate');

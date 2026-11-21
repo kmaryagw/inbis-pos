@@ -10,7 +10,7 @@ class TransactionDetail extends Model
     public $timestamps = false;
 
     protected $fillable = [
-        'transaction_id', 'event_product_id', 'product_code_snapshot', 'product_name_snapshot',
+        'transaction_id', 'event_product_id', 'tenant_id', 'product_code_snapshot', 'product_name_snapshot',
         'unit_price', 'quantity', 'subtotal',
     ];
 
@@ -22,6 +22,11 @@ class TransactionDetail extends Model
     public function transaction(): BelongsTo
     {
         return $this->belongsTo(Transaction::class);
+    }
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
     }
 
     public function eventProduct(): BelongsTo

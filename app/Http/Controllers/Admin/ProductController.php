@@ -5,34 +5,40 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\Tenant;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $products = Product::with('category')
+        $products = Product::with(['category', 'tenant'])
             ->when($request->q, fn ($q, $s) => $q->where(fn ($q) => $q
                 ->where('name', 'like', "%{$s}%")
                 ->orWhere('code', 'like', "%{$s}%")))
             ->when($request->category, fn ($q, $c) => $q->where('category_id', $c))
+            ->when($request->owner === 'none', fn ($q) => $q->whereNull('tenant_id'))
+            ->when(ctype_digit((string) $request->owner), fn ($q) => $q->where('tenant_id', $request->owner))
             ->when($request->filled('status'), fn ($q) => $q->where('is_active', $request->status === 'active'))
             ->orderBy('name')
             ->paginate(25)
             ->withQueryString();
 
         $categories = Category::orderBy('name')->get();
+        $tenants = Tenant::orderBy('name')->get(['id', 'name']);
 
-        return view('admin.products.index', compact('products', 'categories'));
+        return view('admin.products.index', compact('products', 'categories', 'tenants'));
     }
 
     public function create()
     {
         return view('admin.products.form', [
-            'product' => new Product(['is_active' => true, 'unit' => 'pcs']),
+            'product' => new Product(['is_active' => true, 'unit' => 'pcs', 'tenant_id' => request()->integer('tenant') ?: null]),
             'categories' => Category::where('is_active', true)->orderBy('name')->get(),
+            'tenants' => Tenant::where('is_active', true)->orderBy('name')->get(['id', 'code', 'name']),
         ]);
     }
 
@@ -48,7 +54,7 @@ class ProductController extends Controller
 
     public function show(Product $product)
     {
-        $product->load('category');
+        $product->load(['category', 'tenant']);
 
         // Alokasi per kegiatan beserta penjualan (hanya transaksi berhasil)
         $allocations = $product->eventProducts()
@@ -75,6 +81,7 @@ class ProductController extends Controller
         return view('admin.products.form', [
             'product' => $product,
             'categories' => Category::where('is_active', true)->orWhere('id', $product->category_id)->orderBy('name')->get(),
+            'tenants' => Tenant::where('is_active', true)->orWhere('id', $product->tenant_id)->orderBy('name')->get(['id', 'code', 'name']),
         ]);
     }
 
@@ -99,6 +106,7 @@ class ProductController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150'],
             'category_id' => ['nullable', 'exists:categories,id'],
+            'tenant_id' => ['nullable', Rule::exists('tenants', 'id')->where(fn ($q) => $q->where('is_active', true)->orWhere('id', $product?->tenant_id))],
             'description' => ['nullable', 'string', 'max:2000'],
             'unit' => ['required', 'string', 'max:30'],
             'photo' => ['nullable', 'image', 'max:2048'],

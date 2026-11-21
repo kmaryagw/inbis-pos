@@ -8,10 +8,19 @@
 </div>
 
 <form class="row g-2 mb-3" method="get">
-    <div class="col-12 col-md-5">
+    <div class="col-12 col-md-3">
         <input class="form-control" type="search" name="q" value="{{ request('q') }}" placeholder="Cari nama atau kode">
     </div>
     <div class="col-6 col-md-3">
+        <select class="form-select" name="owner" aria-label="Pemilik">
+            <option value="">Semua pemilik</option>
+            <option value="none" @selected(request('owner') === 'none')>— Belum ada pemilik —</option>
+            @foreach ($tenants as $t)
+                <option value="{{ $t->id }}" @selected(request('owner') == $t->id)>{{ $t->name }}</option>
+            @endforeach
+        </select>
+    </div>
+    <div class="col-6 col-md-2">
         <select class="form-select" name="category" aria-label="Kategori">
             <option value="">Semua kategori</option>
             @foreach ($categories as $c)
@@ -32,7 +41,7 @@
 <div class="card">
     <div class="table-responsive">
         <table class="table table-hover mb-0">
-            <thead><tr><th></th><th>Kode</th><th>Nama</th><th>Kategori</th><th>Satuan</th><th>Status</th><th></th></tr></thead>
+            <thead><tr><th></th><th>Kode</th><th>Nama</th><th>Pemilik</th><th>Kategori</th><th>Satuan</th><th>Status</th><th></th></tr></thead>
             <tbody>
             @forelse ($products as $p)
                 <tr>
@@ -45,6 +54,7 @@
                     </td>
                     <td class="text-nowrap">{{ $p->code }}</td>
                     <td class="fw-medium"><a href="{{ route('admin.products.show', $p) }}" class="text-reset text-decoration-none">{{ $p->name }}</a></td>
+                    <td>{!! $p->tenant ? e($p->tenant->name) : '<span class="text-warning-emphasis small">Belum ada</span>' !!}</td>
                     <td>{{ $p->category?->name ?? '—' }}</td>
                     <td>{{ $p->unit }}</td>
                     <td>
@@ -60,7 +70,7 @@
                     </td>
                 </tr>
             @empty
-                <tr><td colspan="7" class="text-center text-muted py-4">Belum ada produk.</td></tr>
+                <tr><td colspan="8" class="text-center text-muted py-4">Belum ada produk.</td></tr>
             @endforelse
             </tbody>
         </table>

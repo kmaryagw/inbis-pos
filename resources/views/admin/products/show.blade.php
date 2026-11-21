@@ -34,6 +34,15 @@
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-5 col-sm-4 fw-normal text-muted">Kode</dt><dd class="col-7 col-sm-8 font-monospace">{{ $product->code }}</dd>
+                    <dt class="col-5 col-sm-4 fw-normal text-muted">Pemilik</dt>
+                    <dd class="col-7 col-sm-8">
+                        @if ($product->tenant)
+                            <a href="{{ route('admin.tenants.show', $product->tenant) }}" class="text-decoration-none">{{ $product->tenant->name }}</a>
+                            <span class="badge {{ $product->tenant->typeBadgeClass() }}">{{ $product->tenant->typeLabel() }}</span>
+                        @else
+                            <span class="text-warning-emphasis">Belum ditentukan</span>
+                        @endif
+                    </dd>
                     <dt class="col-5 col-sm-4 fw-normal text-muted">Kategori</dt><dd class="col-7 col-sm-8">{{ $product->category?->name ?? '—' }}</dd>
                     <dt class="col-5 col-sm-4 fw-normal text-muted">Satuan</dt><dd class="col-7 col-sm-8">{{ $product->unit }}</dd>
                     <dt class="col-5 col-sm-4 fw-normal text-muted">Dibuat</dt><dd class="col-7 col-sm-8">{{ $product->created_at?->format('d/m/Y H:i') }}</dd>

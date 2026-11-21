@@ -168,7 +168,7 @@ class TransactionAndReportTest extends TestCase
         }
         $reader->close();
 
-        $this->assertSame(['Ringkasan', 'Transaksi', 'Per Produk', 'Stok', 'Dibatalkan'], array_keys($sheets));
+        $this->assertSame(['Ringkasan', 'Transaksi', 'Per Produk', 'Per Tenant', 'Stok', 'Dibatalkan'], array_keys($sheets));
         $this->assertSame(50000, (int) $sheets['Transaksi'][1][5]);
         $this->assertSame('Kopi', $sheets['Per Produk'][1][1]);
     }

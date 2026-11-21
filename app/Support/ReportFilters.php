@@ -55,6 +55,27 @@ class ReportFilters
         );
     }
 
+    /** Filter untuk laporan detail satu kegiatan: hanya rentang tanggal yang dapat dipilih. */
+    public static function forEvent(Request $request, Event $event): self
+    {
+        $data = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ]);
+
+        return new self(
+            eventId: $event->id,
+            from: isset($data['from']) ? CarbonImmutable::parse($data['from'])->startOfDay() : null,
+            to: isset($data['to']) ? CarbonImmutable::parse($data['to'])->endOfDay() : null,
+        );
+    }
+
+    /** Parameter tanggal saja (untuk tautan di laporan kegiatan). */
+    public function dateQuery(): array
+    {
+        return array_filter(['from' => $this->from?->toDateString(), 'to' => $this->to?->toDateString()]);
+    }
+
     /**
      * Terapkan filter ke query yang memuat tabel transaksi.
      * $t adalah nama/alias tabel transaksi, mis. 'transactions' atau 't'.

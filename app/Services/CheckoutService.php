@@ -147,6 +147,7 @@ class CheckoutService
         foreach ($lines as [$ep, $quantity, $subtotal]) {
             $transaction->details()->create([
                 'event_product_id' => $ep->id,
+                'tenant_id' => $ep->product->tenant_id,
                 'product_code_snapshot' => $ep->product->code,
                 'product_name_snapshot' => $ep->product->name,
                 'unit_price' => $ep->selling_price,

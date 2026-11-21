@@ -49,7 +49,7 @@ class ReportController extends Controller
     {
         $filters = ReportFilters::fromRequest($request, $request->user());
         $event = $filters->event();
-        $tab = in_array($request->tab, ['sales', 'products', 'payments', 'stock'], true) ? $request->tab : 'sales';
+        $tab = in_array($request->tab, ['sales', 'products', 'tenants', 'payments', 'stock'], true) ? $request->tab : 'sales';
 
         $data = [
             'filters' => $filters,
@@ -69,6 +69,7 @@ class ReportController extends Controller
                     ->where('status', Transaction::VOID)->orderBy('transacted_at')->get(),
             ],
             'products' => ['productSales' => $this->reports->productSales($filters)],
+            'tenants' => ['tenantSales' => $this->reports->tenantSales($filters)],
             'payments' => ['payments' => $this->reports->paymentRecap($filters)],
             'stock' => ['stock' => $event ? $this->reports->stockReport($event) : null],
         };

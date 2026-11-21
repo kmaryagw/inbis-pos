@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 class Product extends Model
 {
-    protected $fillable = ['code', 'name', 'category_id', 'description', 'unit', 'photo', 'is_active'];
+    protected $fillable = ['code', 'name', 'category_id', 'tenant_id', 'description', 'unit', 'photo', 'is_active'];
 
     protected function casts(): array
     {
@@ -45,6 +45,11 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
+    }
+
+    public function tenant(): BelongsTo
+    {
+        return $this->belongsTo(Tenant::class);
     }
 
     public function eventProducts(): HasMany

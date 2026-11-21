@@ -50,7 +50,10 @@ php artisan test
 - **Anti transaksi ganda**: setiap transaksi membawa `idempotency_key` (UUID dari browser, unik di DB).
   Tombol yang ditekan dua kali atau retry jaringan mengembalikan transaksi yang sama.
 - **Nomor transaksi** `POS-[KODE]-YYYYMMDD-NNNN` dari tabel `transaction_counters` yang dikunci per kegiatan per hari.
-- **Snapshot** nama, kode, dan harga produk disimpan di `transaction_details`.
+- **Snapshot** nama, kode, harga, dan pemilik (tenant/dosen) produk disimpan di `transaction_details`.
+  Bila kepemilikan produk dipindah, penjualan lama tetap tercatat pada pemilik lama; penjualan lama
+  yang belum memiliki pemilik ikut dicatat ke pemilik baru saat pemilik ditetapkan.
+- **Kode otomatis**: produk `PRD-00001` dan tenant/dosen `TNT-0001` dibuat dari ID, tidak dapat diubah.
 - **Harga berubah** saat kasir sedang melayani: server menolak bila total berbeda dari yang dilihat kasir.
 - Uang disimpan sebagai bilangan bulat rupiah. Zona waktu default `Asia/Makassar` (WITA).
 
@@ -63,6 +66,8 @@ php artisan test
       pembatalan oleh admin dengan alasan + pergerakan stok pembalik
 - [x] MVP 4 — dashboard, laporan ringkasan penjualan / per produk / metode pembayaran / stok,
       filter lengkap, tampilan cetak A4, ekspor XLSX (OpenSpout), perbandingan pendapatan antar kegiatan
+- [x] Tenant/dosen — pengelolaan tenant/dosen, kepemilikan produk (massal), laporan detail per kegiatan
+      dengan rekap per tenant/dosen, rekap cetak per tenant (bukti serah terima), ekspor XLSX per kegiatan
 - [ ] Pengembangan — cetak langsung dari HP (RawBT/Web Bluetooth), barcode, diskon, PWA, mode offline
 
 ## Role

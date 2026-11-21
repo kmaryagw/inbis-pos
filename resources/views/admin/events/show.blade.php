@@ -19,6 +19,9 @@
         @if ($event->isActive())
             <a href="{{ route('pos.show', $event) }}" class="btn btn-success"><i class="bi bi-cart3 me-1"></i>Buka kasir</a>
         @endif
+        @unless ($event->isDraft())
+            <a href="{{ route('reports.events.show', $event) }}" class="btn btn-outline-secondary"><i class="bi bi-file-earmark-bar-graph me-1"></i>Laporan</a>
+        @endunless
         @if ($editable)
             <a href="{{ route('admin.events.edit', $event) }}" class="btn btn-outline-primary"><i class="bi bi-pencil me-1"></i>Ubah</a>
         @endif

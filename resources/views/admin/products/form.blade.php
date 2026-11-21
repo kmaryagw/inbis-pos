@@ -21,6 +21,16 @@
                     <input class="form-control" id="name" name="name" value="{{ old('name', $product->name) }}" required maxlength="150">
                 </div>
             </div>
+            <div class="mb-3">
+                <label class="form-label" for="tenant_id">Pemilik (tenant / dosen)</label>
+                <select class="form-select" id="tenant_id" name="tenant_id">
+                    <option value="">— Belum ditentukan —</option>
+                    @foreach ($tenants as $t)
+                        <option value="{{ $t->id }}" @selected(old('tenant_id', $product->tenant_id) == $t->id)>{{ $t->name }} ({{ $t->code }})</option>
+                    @endforeach
+                </select>
+                <div class="form-text">Dipakai untuk rekap penjualan per tenant/dosen. <a href="{{ route('admin.tenants.create') }}" target="_blank">Tenant/dosen baru?</a></div>
+            </div>
             <div class="row g-3 mb-3">
                 <div class="col-sm-8">
                     <label class="form-label" for="category_id">Kategori</label>

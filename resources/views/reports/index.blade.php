@@ -3,13 +3,17 @@
 
 @php
     $q = $filters->query();
-    $tabs = ['sales' => 'Ringkasan penjualan', 'products' => 'Per produk', 'payments' => 'Metode pembayaran', 'stock' => 'Stok'];
+    $tabs = ['sales' => 'Ringkasan penjualan', 'products' => 'Per produk', 'tenants' => 'Per tenant/dosen', 'payments' => 'Metode pembayaran', 'stock' => 'Stok'];
 @endphp
 
 @section('content')
+@include('reports._nav')
 <div class="d-flex flex-wrap gap-2 align-items-center justify-content-between mb-3 no-print">
     <h1 class="page-title">Laporan</h1>
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
+        @if ($event)
+            <a href="{{ route('reports.events.show', $event) }}" class="btn btn-outline-primary"><i class="bi bi-calendar-check me-1"></i>Laporan detail kegiatan</a>
+        @endif
         <button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Cetak</button>
         <a href="{{ route('reports.export', $q) }}" class="btn btn-success"><i class="bi bi-file-earmark-excel me-1"></i>Ekspor Excel</a>
     </div>
@@ -171,6 +175,39 @@
             </table>
         </div>
         <p class="small text-muted p-2 mb-0">Produk yang harganya berubah di tengah kegiatan ditampilkan per harga.</p>
+
+    @elseif ($tab === 'tenants')
+        <div class="table-responsive">
+            <table class="table table-sm table-hover mb-0">
+                <thead><tr><th>Kode</th><th>Tenant / Dosen</th><th>Jenis</th><th class="text-end">Produk</th><th class="text-end">Transaksi</th><th class="text-end">Qty terjual</th><th class="text-end">Total penjualan</th></tr></thead>
+                <tbody>
+                @forelse ($tenantSales as $r)
+                    <tr class="{{ $r->tenant_id ? '' : 'table-warning' }}">
+                        <td class="text-nowrap small">{{ $r->code ?? '—' }}</td>
+                        <td>
+                            @if ($r->tenant_id && auth()->user()->isAdmin())
+                                <a href="{{ route('admin.tenants.show', $r->tenant_id) }}">{{ $r->name }}</a>
+                            @else
+                                {{ $r->name }}
+                            @endif
+                            @if ($r->unit)<div class="small text-muted">{{ $r->unit }}</div>@endif
+                        </td>
+                        <td>{{ $r->type ?? '—' }}</td>
+                        <td class="text-end num">{{ $r->products }}</td>
+                        <td class="text-end num">{{ $r->transactions }}</td>
+                        <td class="text-end num">{{ $r->quantity }}</td>
+                        <td class="text-end num">{{ rupiah($r->total) }}</td>
+                    </tr>
+                @empty
+                    <tr><td colspan="7" class="text-center text-muted py-4">Belum ada penjualan.</td></tr>
+                @endforelse
+                </tbody>
+                @if ($tenantSales->isNotEmpty())
+                    <tfoot><tr class="fw-bold"><td colspan="5" class="text-end">Total</td><td class="text-end num">{{ $tenantSales->sum('quantity') }}</td><td class="text-end num">{{ rupiah($tenantSales->sum('total')) }}</td></tr></tfoot>
+                @endif
+            </table>
+        </div>
+        <p class="small text-muted p-2 mb-0">Penjualan dicatat atas pemilik pada saat barang terjual. Untuk rincian per produk dan rekap cetak per tenant, buka Laporan per kegiatan.</p>
 
     @elseif ($tab === 'payments')
         <div class="table-responsive">

@@ -34,8 +34,15 @@
                 @if ($user->isAdmin())
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.events.*', 'admin.event-products.*') ? 'active' : '' }}" href="{{ route('admin.events.index') }}"><i class="bi bi-calendar-event me-1"></i>Kegiatan</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}"><i class="bi bi-box-seam me-1"></i>Produk</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}" href="{{ route('admin.categories.index') }}"><i class="bi bi-tags me-1"></i>Kategori</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}"><i class="bi bi-people me-1"></i>Pengguna</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.tenants.*') ? 'active' : '' }}" href="{{ route('admin.tenants.index') }}"><i class="bi bi-person-badge me-1"></i>Tenant/Dosen</a></li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle {{ request()->routeIs('admin.ownership.*', 'admin.categories.*', 'admin.users.*') ? 'active' : '' }}" href="#" data-bs-toggle="dropdown"><i class="bi bi-gear me-1"></i>Lainnya</a>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item {{ request()->routeIs('admin.ownership.*') ? 'active' : '' }}" href="{{ route('admin.ownership.index') }}"><i class="bi bi-diagram-3 me-2"></i>Kepemilikan produk</a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('admin.categories.*') ? 'active' : '' }}" href="{{ route('admin.categories.index') }}"><i class="bi bi-tags me-2"></i>Kategori</a></li>
+                            <li><a class="dropdown-item {{ request()->routeIs('admin.users.*') ? 'active' : '' }}" href="{{ route('admin.users.index') }}"><i class="bi bi-people me-2"></i>Pengguna</a></li>
+                        </ul>
+                    </li>
                 @endif
             </ul>
             <ul class="navbar-nav">

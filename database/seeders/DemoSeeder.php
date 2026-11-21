@@ -6,6 +6,7 @@ use App\Models\Category;
 use App\Models\Event;
 use App\Models\Product;
 use App\Models\StockMovement;
+use App\Models\Tenant;
 use App\Models\Transaction;
 use App\Models\User;
 use App\Services\CheckoutService;
@@ -28,19 +29,27 @@ class DemoSeeder extends DatabaseSeeder
         $categories = collect(['Makanan', 'Minuman', 'Kerajinan', 'Fashion'])
             ->mapWithKeys(fn ($name) => [$name => Category::firstOrCreate(['name' => $name])]);
 
+        // Nama fiktif untuk data contoh
+        $tenants = collect([
+            'kopi' => ['Dr. Contoh Pertanian, S.TP., M.Si.', Tenant::DOSEN, 'Fakultas Teknologi Pertanian'],
+            'pangan' => ['Dapur Contoh Nusantara', Tenant::TENANT, 'UMKM binaan INBIS'],
+            'kriya' => ['Kriya Contoh Bali', Tenant::TENANT, 'Tenant inkubasi 2026'],
+            'herbal' => ['Dr. Contoh Farmasi, M.Farm.', Tenant::DOSEN, 'Fakultas MIPA'],
+        ])->map(fn ($t) => Tenant::firstOrCreate(['name' => $t[0]], ['type' => $t[1], 'unit' => $t[2], 'is_active' => true]));
+
         $products = [
-            ['KPI-001', 'Kopi Kintamani 200g', 'Makanan', 'pack', 65000],
-            ['KPI-002', 'Kopi Kintamani Drip Bag', 'Minuman', 'box', 45000],
-            ['MDU-001', 'Madu Trigona 250ml', 'Minuman', 'botol', 85000],
-            ['KRP-001', 'Keripik Singkong Pedas', 'Makanan', 'pcs', 15000],
-            ['KRP-002', 'Keripik Pisang Manis', 'Makanan', 'pcs', 15000],
-            ['TEH-001', 'Teh Rosella Kering', 'Minuman', 'pack', 30000],
-            ['KRJ-001', 'Gantungan Kunci Barong', 'Kerajinan', 'pcs', 10000],
-            ['KRJ-002', 'Tas Anyaman Ate', 'Kerajinan', 'pcs', 175000],
-            ['FSH-001', 'Kaos Unud Innovation', 'Fashion', 'pcs', 95000],
-            ['FSH-002', 'Udeng Batik', 'Fashion', 'pcs', 50000],
-            ['SBN-001', 'Sabun Herbal Sereh', 'Kerajinan', 'pcs', 20000],
-            ['MNY-001', 'Minyak Kelapa VCO 100ml', 'Minuman', 'botol', 40000],
+            ['KPI-001', 'Kopi Kintamani 200g', 'Makanan', 'pack', 65000, 'kopi'],
+            ['KPI-002', 'Kopi Kintamani Drip Bag', 'Minuman', 'box', 45000, 'kopi'],
+            ['MDU-001', 'Madu Trigona 250ml', 'Minuman', 'botol', 85000, 'herbal'],
+            ['KRP-001', 'Keripik Singkong Pedas', 'Makanan', 'pcs', 15000, 'pangan'],
+            ['KRP-002', 'Keripik Pisang Manis', 'Makanan', 'pcs', 15000, 'pangan'],
+            ['TEH-001', 'Teh Rosella Kering', 'Minuman', 'pack', 30000, 'herbal'],
+            ['KRJ-001', 'Gantungan Kunci Barong', 'Kerajinan', 'pcs', 10000, 'kriya'],
+            ['KRJ-002', 'Tas Anyaman Ate', 'Kerajinan', 'pcs', 175000, 'kriya'],
+            ['FSH-001', 'Kaos Unud Innovation', 'Fashion', 'pcs', 95000, 'kriya'],
+            ['FSH-002', 'Udeng Batik', 'Fashion', 'pcs', 50000, 'kriya'],
+            ['SBN-001', 'Sabun Herbal Sereh', 'Kerajinan', 'pcs', 20000, 'herbal'],
+            ['MNY-001', 'Minyak Kelapa VCO 100ml', 'Minuman', 'botol', 40000, null], // contoh produk tanpa pemilik
         ];
 
         $event = Event::firstOrNew(['code' => 'UIE26']);
@@ -56,11 +65,14 @@ class DemoSeeder extends DatabaseSeeder
             $event->save();
         }
 
-        foreach ($products as $i => [$code, $name, $cat, $unit, $price]) {
+        foreach ($products as $i => [$code, $name, $cat, $unit, $price, $owner]) {
             $product = Product::firstOrCreate(
                 ['code' => $code],
                 ['name' => $name, 'category_id' => $categories[$cat]->id, 'unit' => $unit, 'is_active' => true],
             );
+            if ($owner && ! $product->tenant_id) {
+                $product->update(['tenant_id' => $tenants[$owner]->id]);
+            }
 
             $ep = $event->eventProducts()->firstOrCreate(
                 ['product_id' => $product->id],
