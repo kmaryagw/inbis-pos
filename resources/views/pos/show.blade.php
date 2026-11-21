@@ -180,6 +180,20 @@
                             <label class="form-check-label fw-semibold" for="qrisOk">Pembayaran QRIS sebesar <span x-text="rupiah(total)"></span> sudah saya cek berhasil</label>
                         </div>
                     </div>
+
+                    {{-- Catatan internal: tidak dicetak di struk --}}
+                    <div class="mt-3">
+                        <button type="button" class="btn btn-link btn-sm px-0 text-decoration-none" style="height: auto"
+                                x-show="!noteOpen && !note" @click="noteOpen = true; $nextTick(() => $refs.note.focus())">
+                            <i class="bi bi-sticky me-1"></i>Tambah catatan
+                        </button>
+                        <div x-show="noteOpen || note" x-cloak>
+                            <label class="form-label fw-semibold small mb-1" for="trxNote"><i class="bi bi-sticky me-1"></i>Catatan <span class="fw-normal text-muted">(tidak tercetak di struk)</span></label>
+                            <textarea id="trxNote" x-ref="note" class="form-control" rows="2" maxlength="500" x-model="note"
+                                      placeholder="Mis. barang diambil besok, pesanan titipan, pembeli minta faktur"></textarea>
+                            <div class="form-text text-end" x-text="note.length + '/500'"></div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -216,6 +230,9 @@
                     <div class="ok-icon"><i class="bi bi-check-circle-fill"></i></div>
                     <h2 class="h4 fw-bold mt-2 mb-1" id="resultTitle">Transaksi berhasil</h2>
                     <div class="trx-no text-muted" x-text="result.number"></div>
+                    <template x-if="result.note">
+                        <div class="alert alert-warning text-start small py-2 mb-2"><i class="bi bi-sticky me-1"></i><span x-text="result.note"></span></div>
+                    </template>
                     <dl>
                         <dt>Total</dt><dd x-text="rupiah(result.total)"></dd>
                         <dt>Metode</dt><dd x-text="result.payment_method"></dd>

@@ -183,4 +183,48 @@ class CheckoutTest extends TestCase
             ->assertSessionHasErrors('username');
         $this->assertGuest();
     }
+
+    public function test_note_is_saved_shown_in_detail_but_not_on_receipt(): void
+    {
+        $id = $this->checkout(['note' => '  Barang diambil besok pagi  '])
+            ->assertOk()
+            ->assertJsonPath('transaction.note', 'Barang diambil besok pagi')
+            ->json('transaction.id');
+        $trx = Transaction::findOrFail($id);
+        $this->assertSame('Barang diambil besok pagi', $trx->note);
+
+        $this->get(route('transactions.show', $trx))->assertOk()->assertSee('Barang diambil besok pagi');
+        $this->get(route('transactions.index'))->assertOk()->assertSee('Barang diambil besok pagi');
+
+        // Tidak tercetak di struk (HTML maupun ESC/POS)
+        $this->get(route('receipts.show', $trx))->assertOk()->assertDontSee('Barang diambil besok');
+        $this->assertStringNotContainsString('diambil', app(\App\Services\EscPosReceipt::class)->build($trx));
+
+        // Catatan kosong disimpan sebagai null, catatan terlalu panjang ditolak
+        $this->assertNull(Transaction::findOrFail($this->checkout(['note' => '   '])->json('transaction.id'))->note);
+        $this->checkout(['note' => str_repeat('x', 501)])->assertStatus(422);
+    }
+
+    public function test_note_can_be_edited_by_cashier_and_admin_but_not_manager(): void
+    {
+        $trx = Transaction::findOrFail($this->checkout()->json('transaction.id'));
+
+        $this->actingAs($this->cashier)->put(route('transactions.note', $trx), ['note' => 'Pembeli minta faktur'])
+            ->assertRedirect(route('transactions.show', $trx));
+        $trx->refresh();
+        $this->assertSame('Pembeli minta faktur', $trx->note);
+        $this->assertSame($this->cashier->id, $trx->note_updated_by);
+        $this->assertNotNull($trx->note_updated_at);
+
+        $admin = User::where('role', User::ROLE_ADMIN)->firstOrFail();
+        $this->actingAs($admin)->put(route('transactions.note', $trx), ['note' => ''])->assertRedirect();
+        $this->assertNull($trx->fresh()->note);
+
+        $manager = User::factory()->create(['role' => User::ROLE_MANAGER]);
+        $this->actingAs($manager)->put(route('transactions.note', $trx), ['note' => 'x'])->assertForbidden();
+
+        $other = User::factory()->create();
+        $this->actingAs($other)->put(route('transactions.note', $trx), ['note' => 'x'])->assertForbidden();
+        $this->assertNull($trx->fresh()->note);
+    }
 }

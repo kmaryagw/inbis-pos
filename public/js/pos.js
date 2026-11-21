@@ -28,6 +28,8 @@
             method: 'cash',
             cashDigits: '',
             qrisConfirmed: false,
+            note: '',
+            noteOpen: false,
             processing: false,
             idempotencyKey: uuid(),
             result: null,
@@ -224,6 +226,7 @@
                             payment_method: this.method,
                             amount_paid: this.method === 'cash' ? this.cash : null,
                             expected_total: this.total,
+                            note: this.note.trim() || null,
                         }),
                     });
                     const data = await res.json().catch(() => ({}));
@@ -257,6 +260,8 @@
                 this.cart = [];
                 this.cashDigits = '';
                 this.qrisConfirmed = false;
+                this.note = '';
+                this.noteOpen = false;
                 this.method = 'cash';
                 this.cartOpen = false;
                 this.touch();

@@ -58,7 +58,7 @@
     @forelse ($transactions as $t)
         <a href="{{ route('transactions.show', $t) }}" class="card card-body mb-2 text-decoration-none text-body py-2 px-3">
             <div class="d-flex justify-content-between align-items-start gap-2">
-                <div class="small font-monospace text-break">{{ $t->number }}</div>
+                <div class="small font-monospace text-break">{{ $t->number }}@if ($t->note) <i class="bi bi-sticky-fill text-warning" title="Ada catatan"></i>@endif</div>
                 @if ($t->isVoid())
                     <span class="badge text-bg-danger"><i class="bi bi-x-circle"></i> Batal</span>
                 @endif
@@ -67,6 +67,7 @@
                 <div class="small text-muted">{{ $t->transacted_at->format('d/m H:i') }} · {{ $t->cashier->name }} · {{ $t->paymentMethodLabel() }}</div>
                 <div class="fw-bold num {{ $t->isVoid() ? 'text-decoration-line-through text-muted' : '' }}">{{ rupiah($t->total) }}</div>
             </div>
+            @if ($t->note)<div class="small text-warning-emphasis text-truncate mt-1"><i class="bi bi-sticky me-1"></i>{{ $t->note }}</div>@endif
         </a>
     @empty
         <div class="card card-body text-center text-muted py-4">Tidak ada transaksi.</div>
@@ -81,7 +82,10 @@
             <tbody>
             @forelse ($transactions as $t)
                 <tr class="{{ $t->isVoid() ? 'text-muted' : '' }}">
-                    <td class="font-monospace small text-nowrap"><a href="{{ route('transactions.show', $t) }}" class="text-decoration-none">{{ $t->number }}</a></td>
+                    <td class="font-monospace small text-nowrap">
+                        <a href="{{ route('transactions.show', $t) }}" class="text-decoration-none">{{ $t->number }}</a>
+                        @if ($t->note)<i class="bi bi-sticky-fill text-warning ms-1" title="{{ $t->note }}"></i>@endif
+                    </td>
                     <td class="text-nowrap">{{ $t->transacted_at->format('d/m/Y H:i') }}</td>
                     <td>{{ $t->event->name }}</td>
                     <td>{{ $t->cashier->name }}</td>

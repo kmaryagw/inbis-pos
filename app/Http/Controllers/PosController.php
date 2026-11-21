@@ -59,7 +59,8 @@ class PosController extends Controller
             'payment_method' => ['required', Rule::in(array_keys(Transaction::PAYMENT_METHODS))],
             'amount_paid' => ['required_if:payment_method,cash', 'nullable', 'integer', 'min:0'],
             'expected_total' => ['nullable', 'integer', 'min:0'],
-        ]);
+            'note' => ['nullable', 'string', 'max:500'],
+        ], [], ['note' => 'catatan']);
 
         $items = collect($data['items'])->mapWithKeys(fn ($i) => [(int) $i['id'] => (int) $i['qty']])->all();
 
@@ -71,6 +72,7 @@ class PosController extends Controller
             (int) ($data['amount_paid'] ?? 0),
             $data['idempotency_key'],
             isset($data['expected_total']) ? (int) $data['expected_total'] : null,
+            $data['note'] ?? null,
         );
 
         return response()->json([
@@ -81,6 +83,7 @@ class PosController extends Controller
                 'amount_paid' => $transaction->amount_paid,
                 'change' => $transaction->change_amount,
                 'payment_method' => $transaction->paymentMethodLabel(),
+                'note' => $transaction->note,
                 'receipt_url' => route('receipts.show', $transaction),
                 // Untuk cetak Bluetooth via RawBT tanpa request tambahan
                 'escpos' => $escpos->base64($transaction),

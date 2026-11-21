@@ -21,7 +21,7 @@ class Transaction extends Model
 
     protected $fillable = [
         'number', 'idempotency_key', 'event_id', 'cashier_id', 'transacted_at', 'item_count',
-        'total', 'payment_method', 'amount_paid', 'change_amount', 'status',
+        'total', 'payment_method', 'amount_paid', 'change_amount', 'note', 'status',
     ];
 
     protected function casts(): array
@@ -29,6 +29,7 @@ class Transaction extends Model
         return [
             'transacted_at' => 'datetime',
             'voided_at' => 'datetime',
+            'note_updated_at' => 'datetime',
             'item_count' => 'integer',
             'total' => 'integer',
             'amount_paid' => 'integer',
@@ -49,6 +50,17 @@ class Transaction extends Model
     public function details(): HasMany
     {
         return $this->hasMany(TransactionDetail::class);
+    }
+
+    public function noteUpdatedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'note_updated_by');
+    }
+
+    /** Catatan internal boleh diubah admin dan kasir yang ditugaskan pada kegiatannya (bukan pimpinan). */
+    public function noteEditableBy(User $user): bool
+    {
+        return ! $user->isManager() && ($user->isAdmin() || $user->canViewEvent($this->event));
     }
 
     public function voidedBy(): BelongsTo

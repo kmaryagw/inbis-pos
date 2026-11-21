@@ -30,6 +30,42 @@
         </div>
     @endif
 
+    @php($canEditNote = $t->noteEditableBy(auth()->user()))
+    @if ($t->note || $canEditNote)
+        <div class="card mb-3 {{ $t->note ? 'border-warning' : '' }}">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center gap-2">
+                    <div class="fw-semibold small"><i class="bi bi-sticky me-1 text-warning"></i>Catatan <span class="fw-normal text-muted">(internal, tidak tercetak di struk)</span></div>
+                    @if ($canEditNote)
+                        <button class="btn btn-sm btn-link text-decoration-none" type="button" data-bs-toggle="collapse" data-bs-target="#noteForm" style="height: auto">
+                            <i class="bi bi-pencil me-1"></i>{{ $t->note ? 'Ubah' : 'Tambah' }}
+                        </button>
+                    @endif
+                </div>
+                @if ($t->note)
+                    <div class="mt-1" style="white-space: pre-line">{{ $t->note }}</div>
+                    @if ($t->note_updated_at)
+                        <div class="small text-muted mt-1">Diubah oleh {{ $t->noteUpdatedBy?->name }} pada {{ $t->note_updated_at->format('d/m/Y H:i') }}</div>
+                    @endif
+                @elseif (! $canEditNote)
+                    <div class="text-muted small">—</div>
+                @endif
+                @if ($canEditNote)
+                    <div class="collapse {{ $errors->has('note') ? 'show' : '' }}" id="noteForm">
+                        <form method="post" action="{{ route('transactions.note', $t) }}" class="mt-2">
+                            @csrf @method('put')
+                            <textarea class="form-control mb-2" name="note" rows="2" maxlength="500" aria-label="Catatan"
+                                      placeholder="Mis. barang diambil besok, pembeli minta faktur">{{ old('note', $t->note) }}</textarea>
+                            @error('note')<div class="text-danger small mb-2">{{ $message }}</div>@enderror
+                            <button class="btn btn-sm btn-primary">Simpan catatan</button>
+                            <span class="small text-muted ms-2">Kosongkan lalu simpan untuk menghapus.</span>
+                        </form>
+                    </div>
+                @endif
+            </div>
+        </div>
+    @endif
+
     <div class="card mb-3">
         <div class="card-body">
             <dl class="row mb-0 small">

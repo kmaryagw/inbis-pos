@@ -31,6 +31,7 @@ class CheckoutService
         int $amountPaid,
         string $idempotencyKey,
         ?int $expectedTotal = null,
+        ?string $note = null,
     ): Transaction {
         if ($existing = $this->findByKey($idempotencyKey, $cashier)) {
             return $existing;
@@ -38,7 +39,7 @@ class CheckoutService
 
         try {
             return DB::transaction(fn () => $this->store(
-                $event, $cashier, $items, $paymentMethod, $amountPaid, $idempotencyKey, $expectedTotal
+                $event, $cashier, $items, $paymentMethod, $amountPaid, $idempotencyKey, $expectedTotal, $note
             ));
         } catch (UniqueConstraintViolationException $e) {
             // Dua request dengan kunci sama berjalan bersamaan: kembalikan yang sudah tersimpan
@@ -57,6 +58,7 @@ class CheckoutService
         int $amountPaid,
         string $idempotencyKey,
         ?int $expectedTotal,
+        ?string $note,
     ): Transaction {
         // Kunci kegiatan (shared) agar tidak ditutup di tengah transaksi
         $event = Event::query()->sharedLock()->findOrFail($event->id);
@@ -141,6 +143,7 @@ class CheckoutService
             'payment_method' => $paymentMethod,
             'amount_paid' => $amountPaid,
             'change_amount' => $change,
+            'note' => filled($note) ? trim($note) : null,
             'status' => Transaction::PAID,
         ]);
 

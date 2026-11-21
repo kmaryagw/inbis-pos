@@ -41,6 +41,7 @@ Route::middleware(['auth', 'role'])->group(function () {
     Route::get('/transaksi', [TransactionController::class, 'index'])->name('transactions.index');
     Route::get('/transaksi/{transaction}', [TransactionController::class, 'show'])->name('transactions.show');
     Route::get('/transaksi/{transaction}/struk', [ReceiptController::class, 'show'])->name('receipts.show');
+    Route::put('/transaksi/{transaction}/catatan', [TransactionController::class, 'updateNote'])->middleware('role:admin,kasir')->name('transactions.note');
     Route::post('/transaksi/{transaction}/batal', [TransactionController::class, 'void'])->middleware('role:admin')->name('transactions.void');
 
     // Dashboard & laporan (admin dan pimpinan)

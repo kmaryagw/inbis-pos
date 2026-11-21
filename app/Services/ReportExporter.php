@@ -46,11 +46,11 @@ class ReportExporter
             $writer->addRow(Row::fromValuesWithStyles([$r->label, $r->count, $r->total], null, [2 => $this->money]));
         }
 
-        $this->sheet($writer, 'Transaksi', ['No. transaksi', 'Waktu', 'Kegiatan', 'Kasir', 'Item', 'Total (Rp)', 'Metode', 'Diterima (Rp)', 'Kembali (Rp)', 'Status']);
+        $this->sheet($writer, 'Transaksi', ['No. transaksi', 'Waktu', 'Kegiatan', 'Kasir', 'Item', 'Total (Rp)', 'Metode', 'Diterima (Rp)', 'Kembali (Rp)', 'Status', 'Catatan']);
         $this->transactions($f, Transaction::PAID, function (Transaction $t) use ($writer) {
             $writer->addRow(Row::fromValuesWithStyles([
                 $t->number, $t->transacted_at->format('Y-m-d H:i:s'), $t->event->name, $t->cashier->name, $t->item_count,
-                $t->total, $t->paymentMethodLabel(), $t->amount_paid, $t->change_amount, $t->statusLabel(),
+                $t->total, $t->paymentMethodLabel(), $t->amount_paid, $t->change_amount, $t->statusLabel(), $t->note,
             ], null, [5 => $this->money, 7 => $this->money, 8 => $this->money]));
         });
 
@@ -137,13 +137,13 @@ class ReportExporter
             }
         }
 
-        $this->sheet($writer, 'Transaksi', ['No. transaksi', 'Waktu', 'Kasir', 'Item', 'Total (Rp)', 'Metode', 'Status', 'Alasan batal']);
+        $this->sheet($writer, 'Transaksi', ['No. transaksi', 'Waktu', 'Kasir', 'Item', 'Total (Rp)', 'Metode', 'Status', 'Alasan batal', 'Catatan']);
         $f->apply(Transaction::query())
             ->with(['cashier:id,name'])
             ->orderBy('transacted_at')
             ->chunk(500, fn ($chunk) => $chunk->each(fn (Transaction $t) => $writer->addRow(Row::fromValuesWithStyles([
                 $t->number, $t->transacted_at->format('Y-m-d H:i:s'), $t->cashier->name, $t->item_count, $t->total,
-                $t->paymentMethodLabel(), $t->statusLabel(), $t->void_reason,
+                $t->paymentMethodLabel(), $t->statusLabel(), $t->void_reason, $t->note,
             ], null, [4 => $this->money]))));
 
         $writer->close();
