@@ -19,8 +19,10 @@ class EventReportController extends Controller
     {
     }
 
-    public function index()
+    public function index(Request $request)
     {
+        $visible = $request->user()->visibleEvents();
+
         $sales = DB::table('transactions')
             ->where('status', Transaction::PAID)
             ->groupBy('event_id')
@@ -35,16 +37,27 @@ class EventReportController extends Controller
             ->selectRaw('ep.event_id, COUNT(DISTINCT p.tenant_id) as tenants')
             ->pluck('tenants', 'event_id');
 
-        $events = Event::orderByRaw("FIELD(status, 'active', 'closed', 'draft')")->orderByDesc('start_date')->get();
+        $events = $visible->orderByRaw("FIELD(status, 'active', 'closed', 'draft')")->orderByDesc('start_date')->get();
 
         return view('reports.events.index', compact('events', 'sales', 'tenants'));
     }
 
     public function show(Request $request, Event $event)
     {
+        $this->authorizeEvent($request, $event);
         $filters = ReportFilters::forEvent($request, $event);
+        $status = in_array($request->status, [Transaction::PAID, Transaction::VOID], true) ? $request->status : null;
 
         return view('reports.events.show', [
+            'status' => $status,
+            'transactions' => $filters->apply(Transaction::query())
+                ->with('cashier:id,name')
+                ->when($status, fn ($q, $s) => $q->where('status', $s))
+                ->orderBy('transacted_at')
+                ->orderBy('id')
+                ->paginate(50, pageName: 'trx')
+                ->withQueryString()
+                ->fragment('transaksi'),
             'event' => $event,
             'filters' => $filters,
             'summary' => $this->reports->summary($filters),
@@ -57,14 +70,27 @@ class EventReportController extends Controller
     /** Rekap satu tenant/dosen untuk satu kegiatan, siap cetak sebagai bukti serah terima. */
     public function tenant(Request $request, Event $event, Tenant $tenant)
     {
+        $this->authorizeEvent($request, $event);
         $filters = ReportFilters::forEvent($request, $event);
         $group = $this->reports->eventTenantDetail($event, $filters, $tenant->id)->groups->first();
 
-        return view('reports.events.tenant', compact('event', 'tenant', 'filters', 'group'));
+        // ?jenis=terjual: rekap ringkas hanya produk yang terjual (tanpa kolom stok)
+        $soldOnly = $request->query('jenis') === 'terjual';
+        if ($soldOnly && $group) {
+            $group->rows = $group->rows->where('quantity', '>', 0)->values();
+        }
+
+        return view('reports.events.tenant', compact('event', 'tenant', 'filters', 'group', 'soldOnly'));
+    }
+
+    private function authorizeEvent(Request $request, Event $event): void
+    {
+        abort_unless($request->user()->canViewEvent($event), 403, 'Anda tidak memiliki akses ke kegiatan ini.');
     }
 
     public function export(Request $request, Event $event, ReportExporter $exporter)
     {
+        $this->authorizeEvent($request, $event);
         $filters = ReportFilters::forEvent($request, $event);
 
         $name = 'laporan-kegiatan-'.Str::slug($event->code).'-'.now()->format('Ymd-His').'.xlsx';

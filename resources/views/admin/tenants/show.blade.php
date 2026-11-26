@@ -67,7 +67,10 @@
                     <td class="text-end num">{{ $s->quantity }}</td>
                     <td class="text-end num fw-semibold">{{ rupiah((int) $s->total) }}</td>
                     <td class="text-end text-nowrap">
-                        <a href="{{ route('reports.events.tenant', [$s->id, $tenant]) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-printer me-1"></i>Rekap</a>
+                        <div class="btn-group btn-group-sm">
+                            <a href="{{ route('reports.events.tenant', [$s->id, $tenant]) }}" class="btn btn-outline-secondary"><i class="bi bi-printer me-1"></i>Rekap lengkap</a>
+                            <a href="{{ route('reports.events.tenant', [$s->id, $tenant, 'jenis' => 'terjual']) }}" class="btn btn-outline-secondary">Terjual</a>
+                        </div>
                     </td>
                 </tr>
             @empty

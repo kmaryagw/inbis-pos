@@ -44,15 +44,17 @@ Route::middleware(['auth', 'role'])->group(function () {
     Route::put('/transaksi/{transaction}/catatan', [TransactionController::class, 'updateNote'])->middleware('role:admin,kasir')->name('transactions.note');
     Route::post('/transaksi/{transaction}/batal', [TransactionController::class, 'void'])->middleware('role:admin')->name('transactions.void');
 
-    // Dashboard & laporan (admin dan pimpinan)
+    // Laporan per kegiatan (semua role; kasir dibatasi kegiatan yang ditugaskan)
+    Route::get('/laporan/kegiatan', [EventReportController::class, 'index'])->name('reports.events.index');
+    Route::get('/laporan/kegiatan/{event}', [EventReportController::class, 'show'])->name('reports.events.show');
+    Route::get('/laporan/kegiatan/{event}/ekspor', [EventReportController::class, 'export'])->name('reports.events.export');
+    Route::get('/laporan/kegiatan/{event}/tenant/{tenant}', [EventReportController::class, 'tenant'])->name('reports.events.tenant');
+
+    // Dashboard & laporan umum (admin dan pimpinan)
     Route::middleware('role:admin,pimpinan')->group(function () {
         Route::get('/dashboard', [ReportController::class, 'dashboard'])->name('dashboard');
         Route::get('/laporan', [ReportController::class, 'index'])->name('reports.index');
         Route::get('/laporan/ekspor', [ReportController::class, 'export'])->name('reports.export');
-        Route::get('/laporan/kegiatan', [EventReportController::class, 'index'])->name('reports.events.index');
-        Route::get('/laporan/kegiatan/{event}', [EventReportController::class, 'show'])->name('reports.events.show');
-        Route::get('/laporan/kegiatan/{event}/ekspor', [EventReportController::class, 'export'])->name('reports.events.export');
-        Route::get('/laporan/kegiatan/{event}/tenant/{tenant}', [EventReportController::class, 'tenant'])->name('reports.events.tenant');
     });
 
     // Administrasi

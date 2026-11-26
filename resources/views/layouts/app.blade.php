@@ -28,9 +28,11 @@
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('pos.*') ? 'active' : '' }}" href="{{ route('pos.index') }}"><i class="bi bi-cart3 me-1"></i>Kasir</a></li>
                 @endunless
                 <li class="nav-item"><a class="nav-link {{ request()->routeIs('transactions.*') ? 'active' : '' }}" href="{{ route('transactions.index') }}"><i class="bi bi-receipt me-1"></i>Transaksi</a></li>
-                @unless ($user->isCashier())
+                @if ($user->isCashier())
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('reports.events.*') ? 'active' : '' }}" href="{{ route('reports.events.index') }}"><i class="bi bi-bar-chart me-1"></i>Laporan kegiatan</a></li>
+                @else
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('reports.*') ? 'active' : '' }}" href="{{ route('reports.index') }}"><i class="bi bi-bar-chart me-1"></i>Laporan</a></li>
-                @endunless
+                @endif
                 @if ($user->isAdmin())
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.events.*', 'admin.event-products.*') ? 'active' : '' }}" href="{{ route('admin.events.index') }}"><i class="bi bi-calendar-event me-1"></i>Kegiatan</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.products.*') ? 'active' : '' }}" href="{{ route('admin.products.index') }}"><i class="bi bi-box-seam me-1"></i>Produk</a></li>

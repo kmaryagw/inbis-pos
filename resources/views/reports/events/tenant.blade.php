@@ -1,5 +1,5 @@
 @extends('layouts.app')
-@section('title', 'Rekap '.$tenant->name.' — '.$event->code)
+@section('title', ($soldOnly ? 'Rekap terjual ' : 'Rekap ').$tenant->name.' — '.$event->code)
 
 @php
     $dq = $filters->dateQuery();
@@ -12,14 +12,20 @@
 <div class="mx-auto" style="max-width: 860px">
     <div class="d-flex flex-wrap gap-2 justify-content-between align-items-center mb-3 no-print">
         <a href="{{ route('reports.events.show', [$event] + $dq) }}" class="small text-decoration-none"><i class="bi bi-arrow-left"></i> Laporan {{ $event->name }}</a>
-        <button type="button" class="btn btn-primary" onclick="window.print()"><i class="bi bi-printer me-1"></i>Cetak rekap</button>
+        <div class="d-flex flex-wrap gap-2">
+            <div class="btn-group" role="group" aria-label="Jenis rekap">
+                <a href="{{ route('reports.events.tenant', [$event, $tenant] + $dq) }}" class="btn {{ $soldOnly ? 'btn-outline-primary' : 'btn-primary' }}" @if (! $soldOnly) aria-current="page" @endif>Rekap lengkap</a>
+                <a href="{{ route('reports.events.tenant', [$event, $tenant] + $dq + ['jenis' => 'terjual']) }}" class="btn {{ $soldOnly ? 'btn-primary' : 'btn-outline-primary' }}" @if ($soldOnly) aria-current="page" @endif>Produk terjual</a>
+            </div>
+            <button type="button" class="btn btn-success" onclick="window.print()"><i class="bi bi-printer me-1"></i>Cetak</button>
+        </div>
     </div>
 
     <div class="card">
         <div class="card-body">
             <div class="text-center mb-3">
                 <div class="fw-bold">INKUBATOR BISNIS UNIVERSITAS UDAYANA</div>
-                <h1 class="h5 mb-0">REKAP PENJUALAN TENANT / DOSEN</h1>
+                <h1 class="h5 mb-0">{{ $soldOnly ? 'REKAP PRODUK TERJUAL' : 'REKAP PENJUALAN TENANT / DOSEN' }}</h1>
             </div>
 
             <div class="row small mb-3">
@@ -39,6 +45,34 @@
                 </div>
             </div>
 
+            @if ($soldOnly)
+            <div class="table-responsive">
+                <table class="table table-sm table-bordered mb-3">
+                    <thead class="table-light"><tr><th>No</th><th>Produk</th><th class="text-end">Harga</th><th class="text-end">Qty terjual</th><th class="text-end">Total</th></tr></thead>
+                    <tbody>
+                    @forelse ($group?->rows ?? [] as $i => $r)
+                        <tr>
+                            <td>{{ $i + 1 }}</td>
+                            <td>{{ $r->name }}<div class="small text-muted">{{ $r->code }}</div></td>
+                            <td class="text-end num">{{ rupiah($r->price) }}{{ $r->multi_price ? '*' : '' }}</td>
+                            <td class="text-end num">{{ $r->quantity }} <span class="small text-muted">{{ $r->unit }}</span></td>
+                            <td class="text-end num">{{ rupiah($r->total) }}</td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5" class="text-center text-muted py-3">Belum ada produk tenant/dosen ini yang terjual pada periode tersebut.</td></tr>
+                    @endforelse
+                    </tbody>
+                    @if ($group && $group->rows->isNotEmpty())
+                        <tfoot><tr class="fw-bold">
+                            <td colspan="3" class="text-end">TOTAL</td>
+                            <td class="text-end num">{{ $group->quantity }}</td>
+                            <td class="text-end num fs-6">{{ rupiah($group->total) }}</td>
+                        </tr></tfoot>
+                    @endif
+                </table>
+            </div>
+
+            @else
             <div class="table-responsive">
                 <table class="table table-sm table-bordered mb-3">
                     <thead class="table-light"><tr><th>No</th><th>Produk</th><th class="text-end">Harga</th><th class="text-end">Diterima</th><th class="text-end">Terjual</th><th class="text-end">Retur</th><th class="text-end">Sisa</th><th class="text-end">Total</th></tr></thead>
@@ -69,9 +103,11 @@
                 </table>
             </div>
 
+            @endif
+
             <p class="small text-muted mb-4">
                 Total penjualan dihitung dari transaksi berhasil (transaksi batal tidak dihitung).
-                Sisa stok adalah barang yang dikembalikan kepada {{ strtolower($tenant->typeLabel()) }}.
+                @unless ($soldOnly) Sisa stok adalah barang yang dikembalikan kepada {{ strtolower($tenant->typeLabel()) }}.@endunless
                 @if ($group?->rows->contains('multi_price', true)) Tanda * berarti harga pernah berubah; total mengikuti harga saat terjual.@endif
             </p>
 

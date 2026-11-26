@@ -23,7 +23,7 @@
                     <td class="text-end"><a href="{{ route('reports.events.show', $e) }}" class="btn btn-sm btn-outline-primary text-nowrap">Lihat detail</a></td>
                 </tr>
             @empty
-                <tr><td colspan="6" class="text-center text-muted py-4">Belum ada kegiatan.</td></tr>
+                <tr><td colspan="6" class="text-center text-muted py-4">{{ auth()->user()->isCashier() ? 'Anda belum ditugaskan pada kegiatan mana pun.' : 'Belum ada kegiatan.' }}</td></tr>
             @endforelse
             </tbody>
         </table>

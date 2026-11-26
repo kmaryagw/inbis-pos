@@ -180,4 +180,46 @@ class TenantTest extends TestCase
         $this->assertSame($this->dosen->id, Product::firstOrFail()->tenant_id);
         $this->get(route('admin.products.index', ['owner' => $this->dosen->id]))->assertOk()->assertSee('Kopi');
     }
+
+    public function test_event_report_lists_transactions_and_sold_only_recap(): void
+    {
+        $kopi = $this->allocate('Kopi Arabika', 25000, 10, $this->dosen);
+        $this->allocate('Teh Rosella', 30000, 10, $this->dosen); // tidak terjual
+        $paid = $this->sell([$kopi->id => 2]);
+        $paid->update(['note' => 'Titipan pembeli']);
+        $void = $this->sell([$kopi->id => 1]);
+        app(VoidService::class)->void($void, $this->admin, 'Salah input jumlah');
+
+        $this->actingAs($this->admin)->get(route('reports.events.show', $this->event))
+            ->assertOk()
+            ->assertSee($paid->number)->assertSee($void->number)
+            ->assertSee('Titipan pembeli')->assertSee('Salah input jumlah');
+        $this->get(route('reports.events.show', [$this->event, 'status' => 'void']))
+            ->assertOk()->assertSee($void->number)->assertDontSee($paid->number);
+
+        $this->get(route('reports.events.tenant', [$this->event, $this->dosen]))
+            ->assertOk()->assertSee('REKAP PENJUALAN')->assertSee('Kopi Arabika')->assertSee('Teh Rosella');
+        $this->get(route('reports.events.tenant', [$this->event, $this->dosen, 'jenis' => 'terjual']))
+            ->assertOk()->assertSee('REKAP PRODUK TERJUAL')->assertSee('Kopi Arabika')->assertDontSee('Teh Rosella')
+            ->assertSee('Rp50.000');
+    }
+
+    public function test_cashier_sees_event_report_only_for_assigned_events(): void
+    {
+        $other = new Event(['code' => 'OTH', 'name' => 'Pameran Lain', 'location' => 'x', 'start_date' => today(), 'end_date' => today(), 'person_in_charge' => 'y']);
+        $other->save();
+
+        $this->actingAs($this->cashier)->get(route('reports.events.index'))
+            ->assertOk()->assertSee('Expo')->assertDontSee('Pameran Lain')->assertDontSee('Laporan umum');
+        $this->get(route('reports.events.show', $this->event))->assertOk();
+        $this->get(route('reports.events.export', $this->event))->assertOk();
+        $this->get(route('reports.events.tenant', [$this->event, $this->dosen]))->assertOk();
+
+        $this->get(route('reports.events.show', $other))->assertForbidden();
+        $this->get(route('reports.events.export', $other))->assertForbidden();
+        $this->get(route('reports.events.tenant', [$other, $this->dosen]))->assertForbidden();
+        // Laporan umum & dashboard tetap tidak untuk kasir
+        $this->get(route('reports.index'))->assertForbidden();
+        $this->get(route('transactions.index'))->assertOk()->assertSee(route('reports.events.index'))->assertSee('Laporan kegiatan');
+    }
 }

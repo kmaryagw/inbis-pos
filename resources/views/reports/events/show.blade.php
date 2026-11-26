@@ -84,7 +84,10 @@
                     <td class="text-end num">{{ round($g->total / $grand * 100, 1) }}%</td>
                     <td class="text-end no-print">
                         @if ($g->tenant)
-                            <a href="{{ route('reports.events.tenant', [$event, $g->tenant] + $dq) }}" class="btn btn-sm btn-outline-secondary text-nowrap"><i class="bi bi-printer me-1"></i>Rekap</a>
+                            <div class="btn-group btn-group-sm" role="group" aria-label="Rekap {{ $g->tenant->name }}">
+                                <a href="{{ route('reports.events.tenant', [$event, $g->tenant] + $dq) }}" class="btn btn-outline-secondary text-nowrap" title="Semua produk beserta stok dan sisa"><i class="bi bi-printer me-1"></i>Rekap lengkap</a>
+                                <a href="{{ route('reports.events.tenant', [$event, $g->tenant] + $dq + ['jenis' => 'terjual']) }}" class="btn btn-outline-secondary text-nowrap" title="Hanya produk yang terjual">Terjual</a>
+                            </div>
                         @endif
                     </td>
                 </tr>
@@ -169,6 +172,52 @@
         </div>
     </div>
 @endforeach
+
+{{-- Daftar transaksi kegiatan --}}
+<div class="card mb-3 mt-4" id="transaksi">
+    <div class="card-header bg-transparent d-flex flex-wrap gap-2 justify-content-between align-items-center">
+        <span class="fw-semibold">Transaksi <span class="fw-normal text-muted small">({{ number_format($transactions->total(), 0, ',', '.') }})</span></span>
+        <ul class="nav nav-pills nav-sm small no-print">
+            @foreach (['' => 'Semua', 'paid' => 'Berhasil', 'void' => 'Batal'] as $value => $label)
+                <li class="nav-item">
+                    <a class="nav-link py-1 px-2 {{ ($status ?? '') === $value ? 'active' : '' }}"
+                       href="{{ route('reports.events.show', [$event] + $dq + array_filter(['status' => $value])) }}#transaksi">{{ $label }}</a>
+                </li>
+            @endforeach
+        </ul>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-sm table-hover mb-0 align-middle">
+            <thead><tr><th>No. transaksi</th><th>Waktu</th><th>Kasir</th><th>Metode</th><th class="text-end">Item</th><th class="text-end">Total</th><th>Status</th><th>Catatan</th></tr></thead>
+            <tbody>
+            @forelse ($transactions as $t)
+                <tr class="{{ $t->isVoid() ? 'text-muted' : '' }}">
+                    <td class="font-monospace small text-nowrap"><a href="{{ route('transactions.show', $t) }}" class="text-decoration-none">{{ $t->number }}</a></td>
+                    <td class="text-nowrap">{{ $t->transacted_at->format('d/m H:i') }}</td>
+                    <td>{{ $t->cashier->name }}</td>
+                    <td>{{ $t->paymentMethodLabel() }}</td>
+                    <td class="text-end num">{{ $t->item_count }}</td>
+                    <td class="text-end num {{ $t->isVoid() ? 'text-decoration-line-through' : 'fw-semibold' }}">{{ rupiah($t->total) }}</td>
+                    <td>
+                        @if ($t->isVoid())
+                            <span class="badge text-bg-danger" title="{{ $t->void_reason }}">Batal</span>
+                        @else
+                            <span class="badge text-bg-success">Berhasil</span>
+                        @endif
+                    </td>
+                    <td class="small" style="max-width: 260px">
+                        @if ($t->note)<span class="text-warning-emphasis"><i class="bi bi-sticky me-1"></i>{{ \Illuminate\Support\Str::limit($t->note, 80) }}</span>@endif
+                        @if ($t->isVoid())<div class="text-danger">Batal: {{ \Illuminate\Support\Str::limit($t->void_reason, 60) }}</div>@endif
+                    </td>
+                </tr>
+            @empty
+                <tr><td colspan="8" class="text-center text-muted py-4">Tidak ada transaksi.</td></tr>
+            @endforelse
+            </tbody>
+        </table>
+    </div>
+    @if ($transactions->hasPages())<div class="p-2 no-print">{{ $transactions->links() }}</div>@endif
+</div>
 
 <p class="small text-muted">
     Penjualan dihitung dari transaksi berhasil{{ $dq ? ' dalam periode terpilih' : '' }} dan dicatat atas pemilik saat barang terjual.
